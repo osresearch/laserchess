@@ -234,14 +234,25 @@ let ShapePos = [
 ];
 
 
+// uses global px and py
+// would use the es object, but we instead draw the square with
+// a rectangle:
+// LINE(0,0)-(26,18),2,bf:GET(0,0)-(26,18),es(0,0)
+// LINE(0,0)-(26,18),3,bf:GET(0,0)-(26,18),es(0,1)
 function EraseSquare()
 {
+	x = px * 27 + 16;
+	y = py * 19 - 6;
+	bkgd = (px + py + 1) & 1; // alternate colors
+	noStroke();
+	fill(palette(bkgd ? 2 : 3));
+	rect(x, y, 26, 18);
 }
 
 function DrawBoard()
 {
 	// there are some line draw commands for making buttons?
-	fill(palette(2));
+	fill(palette(3));
 	rect(11, 54, 16, 11);
 	rect(11, 94, 16, 10);
 	rect(11, 134, 16, 10);
