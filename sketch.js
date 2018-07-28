@@ -76,7 +76,7 @@ let ShapeRefLect = [
 	3, 2, -1, -1,
 ];
 
-let cop = [];
+let cop = [0, 4,6]; // color of player (1-indexed)
 let L = [];
 
 let fL = true; // true for "Filled" shapes
@@ -185,8 +185,6 @@ function setup()
 	for(let i=128 ; i <= 255 ; i++)
 		sq[i] = -128 + random() * 50;
 
-	cop[1] = 4;
-	cop[2] = 6;
 	InitShapes();
 	InitObjects();
 	
@@ -291,20 +289,52 @@ function DrawBoard()
 function draw_shape()
 {
 	let i = piece[px][py];
+	let angle = orient[px][py];
 
 	for(let j=1 ; j <= shpt[i] ; j++)
 	{
-		let hue = 5; // co
+		let hue = cop[cLr[px][py]];
 		if (shptx[i][j-1] < 0)
 			hue++;
 		noFill();
 		stroke(palette(hue));
-		line(
-			abs(shptx[i][j-1]) + 4 + x,
-			shpty[i][j-1] + y,
-			abs(shptx[i][j]) + 4 + x,
-			shpty[i][j] + y
-		);
+
+		let x1 = abs(shptx[i][j-1]);
+		let y1 = shpty[i][j-1];
+		let x2 = abs(shptx[i][j]);
+		let y2 = shpty[i][j];
+
+		if (angle == 0) // rotate0
+			line(
+				x1 + 4 + x,
+				y1 + y,
+				x2 + 4 + x,
+				y2 + y
+			);
+		else
+		if (angle == 1) // rotate90
+			line(
+				18 - y1 + 4 + x, 
+				x1 + y,
+				18 - y2 + 4 + x,
+				x2 + y
+			);
+		else
+		if (angle == 2) // rotate180
+			line(
+				18 - x1 + 4 + x,
+				18 - y1 + y,
+				18 - x2 + 4 + x,
+				18 - y2 + y
+			);
+		else
+		if (angle == 3) // rotate270
+			line(
+				x1 + 4 + x,
+				18 - y1 + y,
+				x2 + 4 + x,
+				18 - y2 + y
+			);
 
 		// fill requires paint, which we don't use
 		
