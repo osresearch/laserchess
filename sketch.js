@@ -39,13 +39,15 @@ let drk = [];
 let dirck = dim([8,3,3]);
 let bmd0 = dim([158]);
 let bmd1 = dim([22]);
-let ddrcx = dim([1,20]);
-let ddrcy = dim([1,20]);
+let ddrcx = [[], []]; // dim([1,20]);
+let ddrcy = [[], []]; // dim([1,20]);
 let pt = dim([14]);
 let s = dim([255]);
 let n = dim([255]);
 let sq = dim([255]);
 let freq = dim([20,4]);
+let vol = [];
+let hysq = 0;
 
 let shpt	= []; // 1, 6, 1, 7, 6, 4, 6, 5];
 let turns	= []; // 1, 3, 1, 0, 3, 0, 3, 3];
@@ -189,6 +191,9 @@ function setup()
 	createCanvas(320, 200);
 	//scale(1.0, 26.0/18.0);
 
+	for(i=0 ; i <= 20 ; i++)
+		freq[i] = [];
+
 	for(i=0 ; i <= 255 ; i++)
 		s[i] = 127 - i;
 	for(i=0 ; i <= 255 ; i++)
@@ -197,6 +202,7 @@ function setup()
 		sq[i] = 127 - random() * 50;
 	for(i=128 ; i <= 255 ; i++)
 		sq[i] = -128 + random() * 50;
+
 
 	InitShapes();
 	InitObjects();
@@ -260,12 +266,15 @@ function EraseSquare()
 	bkgd = (px + py + 1) & 1; // alternate colors
 	noStroke();
 	fill(palette(bkgd ? 2 : 3));
-	rect(x, y, 26, 18);
+	rect(x, y, 27, 19);
 }
 
-function DrawBoard()
+
+// extracted code to draw the board so that we can avoid sprites
+function RedrawBoard()
 {
 	// These are the command buttons on the left hand side
+	noStroke();
 	fill(palette(3));
 	rect(11, 54, 16, 11);
 	rect(11, 94, 16, 10);
@@ -282,6 +291,18 @@ function DrawBoard()
 		for(py = 1 ; py <= 9 ; py++)
 			EraseSquare();
 
+	for(px=1 ; px <= 9 ; px++)
+	{
+		for(py=1 ; py <= 9 ; py++)
+		{
+			if (piece[px][py] > 0)
+				PutShape();
+		}
+	}
+}
+
+function DrawBoard()
+{
 	let offset = 0; // RESTORE ShapePos
 	for(px=1 ; px <= 9 ; px++)
 	{
@@ -310,14 +331,9 @@ function DrawBoard()
 		}
 	}
 
-	for(px=1 ; px <= 9 ; px++)
-	{
-		for(py=1 ; py <= 9 ; py++)
-		{
-			if (piece[px][py] > 0)
-				PutShape();
-		}
-	}
+
+	RedrawBoard();
+
 }
 
 // This replaces the PUT that would use the blitter to draw the object
@@ -558,6 +574,8 @@ function ExpLode()
 	EraseSquare();
 
 	// draw the random explosion
+	stroke(palette(10));
+
 	for(j=0 ; j <= 20 ; j++)
 	{
 		point(ddrcx[0][j], ddrcy[0][j])
@@ -662,7 +680,7 @@ BDn: PUT(x+1,y) bmd0: GOTO CkBeam
 BLt: PUT(X-27,y), bmd1: GOTO CkBeam
 
 CkBeam:
-IF (nLx(i) > 9) OR (nLy(i) > 9) OR (nLx(i) < 0) OR (nLy(i) < 0) THEN EndBeam
+IF (nLx(i) > 9) OR (nLy(i) > 9) OR (nLx(i) < 1) OR (nLy(i) < 1) THEN EndBeam
 IF (nLx(i) = 5 AND nLy(i) = 5) THEN EndBeam
 Lx(i) = nLx(i)
 Ly(i) = nLy(i)
@@ -703,7 +721,7 @@ function DrawBeam()
 		line(x,y, x, y-18);
 
 	// CkBeam:
-	if (nLx[i] > 9 || nLy[i] > 9 || nLx[i] < 0 || nLy[i] < 0)
+	if (nLx[i] > 9 || nLy[i] > 9 || nLx[i] < 1 || nLy[i] < 1)
 		return false; // EndBeam
 	if (nLx[i] == 5 && nLy[i] == 5)
 		return false; // EndBeam
@@ -886,12 +904,14 @@ function Laser()
 	for(i=1 ; i <= 3 ; i++)
 	{
 		if (term[i] == 1)
-			if (piece[Lx[i],Ly[i]] > 0)
+			if (piece[Lx[i]][Ly[i]] > 0)
 			{
 				tx = px;
 				ty = py;
 				px = Lx[i];
 				py = Ly[i];
+				piece[px][py] = 0;
+				cLr[px][py] = 0;
 				ExpLode();
 				px = tx;
 				py = ty;
@@ -1106,8 +1126,8 @@ function draw()
 
 		// need to check for keypress
 
-		x = mouseX;
-		y = mouseY;
+		x = mouseX - 26/2;
+		y = mouseY - 18/2;
 		draw_shape(cop[cLr[px][py]]);
 
 	} else
@@ -1121,9 +1141,13 @@ function draw()
 		px = int((x-17)/27);
 		py = int((y+6)/19);
 
+
 		// if no piece is selected, we're done
 		if (piece_sel == 0)
+		{
+			RedrawBoard();
 			return;
+		}
 
 		CheckMove();
 		PutShape();
@@ -1134,6 +1158,7 @@ function draw()
 			Lpy[pL] = py;
 		}
 
+		RedrawBoard();
 		return EndMove();
 	}
 }
