@@ -201,7 +201,7 @@ function setup()
 	k = 0;
 	pL = 1; // player 1 goes first
 
-	EndMove();
+	EndTurn();
 
 }
 
@@ -252,11 +252,18 @@ function EraseSquare()
 
 function DrawBoard()
 {
-	// there are some line draw commands for making buttons?
+	// These are the command buttons on the left hand side
 	fill(palette(3));
 	rect(11, 54, 16, 11);
 	rect(11, 94, 16, 10);
 	rect(11, 134, 16, 10);
+
+	textSize(5);
+	textAlign(CENTER, CENTER);
+	fill(palette(11));
+	text("Q", 11+16/2, 54+11/2);
+	text("R", 11+16/2, 94+10/2);
+	text("L", 11+16/2, 134+10/2);
 
 	for(px = 1 ; px <= 9 ; px++)
 		for(py = 1 ; py <= 9 ; py++)
@@ -487,8 +494,34 @@ function CheckMove()
 }
 
 
+function Laser()
+{
+	console.log("FIRE THE LASER!");
+
+}
+
+
 function Options()
 {
+	moves = 0;
+	if (y > 133 && y < 145 && fired && L[pL])
+	{
+		fired = 0;
+		// laser sounds
+		Laser();
+		moves = 1;
+		return EndMove();
+	} else
+	if (y > 93 && y < 105)
+	{
+		// restart
+		// TODO
+	} else
+	if (y > 53 && y < 66)
+	{
+		// Quit
+	}
+
 }
 
 
@@ -582,7 +615,7 @@ IF move > 0 THEN MovePiece
 GOTO Main
 */
 
-function EndMove()
+function EndTurn()
 {
 	// toggle the player
 	pL ^= 3;
@@ -599,6 +632,26 @@ function EndMove()
 	stroke(palette(cop[pL]));
 	rect(40, 10, 288-40, 186-10);
 	rect(42, 12, 286-42, 184-12);
+}
+
+
+function EndMove()
+{
+	if (k)
+		return EndGame();
+
+	move = move - moves;
+
+	if (move == 1)
+	{
+		// remove one move indicator
+		noFill();
+		stroke(palette(0));
+		rect(40,10, 288-40, 186-10);
+	}
+
+	if (move == 0)
+		EndTurn();
 }
 
 
@@ -672,21 +725,6 @@ function draw()
 			Lpy[pL] = py;
 		}
 
-		// EndMove
-		if (k)
-			return EndGame();
-
-		move = move - moves;
-
-		if (move == 1)
-		{
-			// remove one move indicator
-			noFill();
-			stroke(palette(0));
-			rect(40,10, 288-40, 186-10);
-		}
-
-		if (move == 0)
-			EndMove();
+		return EndMove();
 	}
 }
