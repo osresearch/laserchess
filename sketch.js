@@ -6,6 +6,7 @@ function dim(dims)
 	return [];
 }
 
+
 //let sn = dim([8,3,1,1]);
 let es = dim([155,1]);
 let shape = dim([155,87]);
@@ -156,10 +157,6 @@ function InitShapes()
 			}
 		}
 	}
-
-	noStroke();
-	fill(palette(10));
-	//rect(0,0, 
 }
 
 
@@ -175,6 +172,7 @@ function InitObjects()
 function setup()
 {
 	createCanvas(320, 200);
+	//scale(1.0, 26.0/18.0);
 
 	for(let i=0 ; i <= 255 ; i++)
 		s[i] = 127 - i;
@@ -199,8 +197,16 @@ function setup()
 	background(0);
 	DrawBoard();
 	k = 0;
-	pL = 1;
+	pL = 1; // player 1 goes first
 
+	// Main:
+	px = 5;
+	py = 5;
+	move = 2;
+	hycube = 0;
+	hyqs = 0;
+	taken = 0;
+	fired = 1;
 
 }
 
@@ -267,6 +273,13 @@ function DrawBoard()
 		cLr[px] = [];
 		piece[px] = [];
 		orient[px] = [];
+
+		for(py=1; py <= 9 ; py++)
+		{
+			cLr[px][py] = 0;
+			piece[px][py] = 0;
+			orient[px][py] = 0;
+		}
 	}
 
 	for(py=1; py <= 2 ; py++)
@@ -355,6 +368,11 @@ function draw_shape()
 
 function PutShape()
 {
+	// ensure that we are within bounds
+	if (px <= 0 || px >= 10
+	||  py <= 0 || py >= 10)
+		return;
+
 	x = px * 27 + 16;
 	y = py * 19 - 6;
 	bkgd = (px + py + 1) & 1;
@@ -362,25 +380,179 @@ function PutShape()
 }
 
 
+function MovePiece()
+{
+}
+
+
+function Options()
+{
+}
+
+
+let prev_mouse = false;
+
+/*
+Notes on the Amiga BASIC mouse command:
+MOUSE(0) = Status of mouse button
+	0 = not down,
+	1 = clicked once,
+	2 = clicked twice,
+	-1 = button held down,
+	-2 = button held down after clicking twice
+MOUSE(1) = Current horizontal poisiton,
+MOUSE(2) = Current vertical position,
+MOUSE(3) = Starting horizontal position,
+MOUSE(4) = Starting vertical position,
+MOUSE(5) = Ending horiz. position,
+MOUSE(6) = Ending vert. position.
+*/
+
+/*
+Main:
+pL = pL XOR 3  // toggle player
+px = 5
+py = 5
+move = 2
+hycube = 0
+hysq = 0
+taken = 0
+fired = 1
+LINE(40,10)-(288,186),cop(PL),b // move 1 indicator
+LINE(42,12)-(286,184),cop(PL),b // move 2 indicator
+
+MovePiece:
+WHILE MOUSE(0) > -1 : WEND // wait for mouse down
+x = MOUSE(3)
+y = MOUSE(4)
+px = INT((x-17)/27)
+py = INT((y+6)/19)
+moves = 0
+
+// if they clicked off the board, try to process an option button
+IF NOT((px > 0 AND px < 10) AND (py > 0 AND py < 10)) THEN Options
+
+// if they clicked on non-their piece, go back to waiting
+IF cLr(px,py) <> pL THEN MovePiece
+
+piece = piece(px,py)
+rot = orient(px,py)
+obindex = oi(piece,rot) // image?
+spx = px // starting position
+spy = py // starting position
+
+// while the mouse is held down, move the piece along with the mouse
+// if the user hits any key, rotate the piece and play a tune
+WHILE MOUSE(0) < 0
+	OBJECT.X obindex, MOUSE(1)-14
+	OBJECT.Y obindex, MOUSE(2)-10
+	IF INKEY$ <> "" THEN
+		rot = (rot + 1) AND turns(piece)
+		j = obindex
+		obindex = oi(piece,rot)
+		OBJECT.X obindex, MOUSE(1)-14
+		OBJECT.Y obindex, MOUSE(2)-10
+		OBJECT.OFF j // turn off the old piece
+		WAVE 0, s
+		SOUND 4000,.1,255,0
+		OBJECT.ON obindex // turn on the new piece
+	END IF
+WEND
+
+OBJECT.OFF obindex
+GOSUB EraseSquare
+
+// release location is 5/6
+px = INT((MOUSE(5)-17)/27)
+py = INT((MOUSE(6)+6)/19)
+GOSUB CheckMove
+GOSUB PutShape
+
+if piece(px,py)=2 THEN Lpx(pL)=px:Lpy(pL)=py
+
+EndMove:
+IF k THEN EndGame
+move = move - moves
+
+// turn off one move indicator if there is another move left
+IF move = 1 THEN LINE(40,10)-(288,186),0,b
+IF move > 0 THEN MovePiece
+GOTO Main
+*/
 
 function draw()
 {
-	// Main:
-	pL = pL ^ 3;
-	px = 5;
-	py = 5;
-	move = 2;
-	hycube = 0;
-	hyqs = 0;
-	taken = 0;
-	fired = 1;
-
 	noFill();
-	stroke(palette(pL));
+	stroke(palette(cop[pL]));
 	rect(40, 10, 288-40, 186-10);
 	rect(42, 12, 286-42, 184-12);
 
+	x = mouseX;
+	y = mouseY;
+	px = int((x-17)/27);
+	py = int((y+6)/19);
+
 	// MovePiece:
-	while (!mouseIsPresed)
-		;
+	if (!mouseIsPressed)
+	{
+		if (!prev_mouse)
+			return;
+
+		// mouse was just released
+		prev_mouse = false;
+		CheckMove();
+		PutShape();
+
+		if (piece[px][py] == 2)
+		{
+			Lpx[pL] = px;
+			Lpy[pL] = py;
+		}
+
+		// EndMove
+		if (k)
+			return EndGame();
+		move = move - moves;
+
+		if (move == 1)
+		{
+			// remove one move indicator
+			noFill();
+			stroke(palette(0));
+			rect(40,10, 288-40, 186-10);
+		}
+
+		if (move > 0)
+			return MovePiece();
+		
+		// toggle the player
+		pL ^= 3;
+		return;
+	}
+
+	// if the button is held, don't do anything yet
+	if (prev_mouse)
+		return;
+
+	prev_mouse = true;
+		
+	moves = 0;
+
+	console.log("xy=" + x + "," + y + " p=" + px + "," + py);
+
+	if (!(px > 0 && px < 10 && py > 0 && py <10))
+		Options();
+	else
+	if (cLr[px][py] != pL)
+		MovePiece();
+	else {
+		let piece_sel = piece[px][py];
+		let rot = orient[px][py];
+		obindex = 5; //oi[px][rot];
+		spx = px;
+		spy = py;
+		if (obindex <= 0)
+			return MovePiece();
+		EraseSquare();
+	}
 }
