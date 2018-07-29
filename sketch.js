@@ -77,6 +77,8 @@ let ShapeRefLect = [
 	3, 2, -1, -1,
 ];
 
+let piece_sel = false;
+
 let cop = [0, 4,6]; // color of player (1-indexed)
 let L = [];
 
@@ -199,14 +201,7 @@ function setup()
 	k = 0;
 	pL = 1; // player 1 goes first
 
-	// Main:
-	px = 5;
-	py = 5;
-	move = 2;
-	hycube = 0;
-	hyqs = 0;
-	taken = 0;
-	fired = 1;
+	EndMove();
 
 }
 
@@ -379,9 +374,116 @@ function PutShape()
 	draw_shape();
 }
 
-
-function MovePiece()
+function HyperCube()
 {
+	do {
+		nx = int(random() * 9 + 1)
+		ny = int(random() * 9 + 1)
+	} while ((nx == 5 && ny == 5) || piece[nx][ny] != 0);
+
+	piece[nx][ny] = piece[px][py];
+	orient[nx][ny] = orient[px][py];
+	cLr[nx][ny] = cLr[px][py];
+	ValidMove();
+	// play a sound
+	PutShape();
+	piece[spx][spy] = 0;
+	cLr[spx][spy] = 0;
+	px = nx;
+	py = ny;
+}
+
+function VaLidMove()
+{
+	console.log("valid move");
+	piece[px][py] = piece_sel;
+	orient[px][py] = rot;
+	cLr[px][py] = cLr[spx][spy];
+	if (dx > 0 || dy > 0)
+	{
+		piece[spx][spy] = 0;
+		cLr[spx][spy] = 0;
+	}
+}
+
+function InVaLidMove()
+{
+	console.log("Invalid move");
+	px = spx;
+	py = spy;
+	moves = 0;
+}
+
+
+function CheckMove()
+{
+	dx = abs(px-spx);
+	dy = abs(py-spy);
+	moves = dx + dy + abs(rot != orient[spx][spy]);
+	if (dx == 0 && dy == 0)
+		return VaLidMove();
+	if (moves > move)
+		return InVaLidMove();
+	if (moves == 2)
+	{
+		midx = (px + spx)/2;
+		midy = (py + spy)/2;
+		if (midx == 5 && midy == 5)
+			return InVaLidMove();
+		if (dx == 2)
+			if (piece[midx][py] != 0)
+				return InVaLidMove();
+		if (dy == 2)
+			if (piece[px][midy] != 0)
+				return InVaLidMove();
+		if (dx == 1 && dy == 1)
+			if ((piece[px][spy] != 0 || (px == 5 && spy==5))
+			|| (spx == 5 && py == 5))
+				return InVaLidMove();
+	}
+
+	// check for a capture
+	if (piece[px][py] != 0)
+	{
+		if (piece_sel == 4 || piece_sel == 5)
+		{
+			if (taken)
+				return InVaLidMove();
+			if (piece[px][py] == 4)
+				k = cLr[px][py];
+			if (piece[px][py] == 2)
+				k = L[clR[px][py]] == 0;
+
+			// play some music
+			taken = 1;
+			return VaLidMove();
+		} else
+		if (piece_sel == 6)
+		{
+			if (hycube)
+				return InVaLidMove();
+			hycube = 1;
+			return HyperCube();
+		} else
+			return InVaLidMove();
+	}
+
+	if (!(px == 5 && py == 5))
+		return VaLidMove();
+	if (hysq)
+		return InVaLidMove();
+
+	while ((px == 5 && py == 5) || piece[px][py] != 0)
+	{
+		px = int(random() * 9 + 1)
+		py = int(random() * 9 + 1)
+		// play a sound
+		VaLidMove();
+		// play another sound
+		hysq = 1;
+		PutShape();
+		return;
+	}
 }
 
 
@@ -480,26 +582,87 @@ IF move > 0 THEN MovePiece
 GOTO Main
 */
 
-function draw()
+function EndMove()
 {
+	// toggle the player
+	pL ^= 3;
+
+	px = 5;
+	py = 5;
+	move = 2;
+	hycube = 0;
+	hyqs = 0;
+	taken = 0;
+	fired = 1;
+
 	noFill();
 	stroke(palette(cop[pL]));
 	rect(40, 10, 288-40, 186-10);
 	rect(42, 12, 286-42, 184-12);
+}
 
-	x = mouseX;
-	y = mouseY;
-	px = int((x-17)/27);
-	py = int((y+6)/19);
 
+function draw()
+{
 	// MovePiece:
-	if (!mouseIsPressed)
+	if (mouseIsPressed && !prev_mouse)
 	{
-		if (!prev_mouse)
+		// first mouse press
+		prev_mouse = true;
+
+		x = mouseX;
+		y = mouseY;
+		px = int((x-17)/27);
+		py = int((y+6)/19);
+		moves = 0;
+		piece_sel = 0;
+		
+		if (!(px > 0 && px < 10 && py > 0 && py <10))
+			return Options();
+		else
+		if (cLr[px][py] != pL)
 			return;
 
-		// mouse was just released
+		piece_sel = piece[px][py];
+		rot = orient[px][py];
+
+		// obindex = oi[px][rot];
+		spx = px;
+		spy = py;
+		if (piece_sel == 0)
+			return; // GOTO MovePiece
+		EraseSquare();
+	} else
+	if (mouseIsPressed && prev_mouse)
+	{
+		// mouse drag after first press
+		prev_mouse = true;
+
+		// ignore if we do not have a piece selected
+		if (piece_sel == 0)
+			return;
+
+		// need to check for keypress
+
+		x = mouseX;
+		y = mouseY;
+		draw_shape();
+
+	} else
+	if (!mouseIsPressed && prev_mouse)
+	{
+		// first release after a drag
 		prev_mouse = false;
+
+		x = mouseX;
+		y = mouseY;
+		px = int((x-17)/27);
+		py = int((y+6)/19);
+
+		// if no piece is selected, we're done
+		if (piece_sel == 0)
+			return;
+
 		CheckMove();
 		PutShape();
 
@@ -512,6 +675,7 @@ function draw()
 		// EndMove
 		if (k)
 			return EndGame();
+
 		move = move - moves;
 
 		if (move == 1)
@@ -522,37 +686,7 @@ function draw()
 			rect(40,10, 288-40, 186-10);
 		}
 
-		if (move > 0)
-			return MovePiece();
-		
-		// toggle the player
-		pL ^= 3;
-		return;
-	}
-
-	// if the button is held, don't do anything yet
-	if (prev_mouse)
-		return;
-
-	prev_mouse = true;
-		
-	moves = 0;
-
-	console.log("xy=" + x + "," + y + " p=" + px + "," + py);
-
-	if (!(px > 0 && px < 10 && py > 0 && py <10))
-		Options();
-	else
-	if (cLr[px][py] != pL)
-		MovePiece();
-	else {
-		let piece_sel = piece[px][py];
-		let rot = orient[px][py];
-		obindex = 5; //oi[px][rot];
-		spx = px;
-		spy = py;
-		if (obindex <= 0)
-			return MovePiece();
-		EraseSquare();
+		if (move == 0)
+			EndMove();
 	}
 }
