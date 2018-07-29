@@ -6,6 +6,9 @@ function dim(dims)
 	return [];
 }
 
+// yes, there are global i and j
+let i = 0;
+let j = 0;
 
 //let sn = dim([8,3,1,1]);
 let es = dim([155,1]);
@@ -25,6 +28,13 @@ let diry = [-1,  0, +1,  0];
 
 let Lpx = [];
 let Lpy = [];
+let Lx = [0,0,0,0];
+let Ly = [0,0,0,0];
+let dir = [0,0,0,0];
+let aLive = [];
+let term = [];
+let nLx = [];
+let nLy = [];
 let dirck = dim([8,3,3]);
 let bmd0 = dim([158]);
 let bmd1 = dim([22]);
@@ -130,14 +140,14 @@ function InitShapes()
 	x = 0;
 	y = 0;
 	let offset = 0; // RESTORE ShapePts
-	for(let i = 1 ; i <= 8 ; i++)
+	for(i = 1 ; i <= 8 ; i++)
 	{
 		turns[i] = ShapePts[offset++];
 		shpt[i] = ShapePts[offset++];
 		shptx[i] = [];
 		shpty[i] = [];
 
-		for(let j = 0 ; j <= shpt[i]+1 ; j++)
+		for(j = 0 ; j <= shpt[i]+1 ; j++)
 		{
 			shptx[i][j] = ShapePts[offset++];
 			shpty[i][j] = ShapePts[offset++];
@@ -147,10 +157,10 @@ function InitShapes()
 	}
 
 	offset = 0; // RESTORE ShapeRefLect
-	for(let i = 1 ; i <= 8 ; i++)
+	for(i = 1 ; i <= 8 ; i++)
 	{
 		dirck[i] = [];
-		for(let j=0 ; j <= turns[i] ; j++)
+		for(j=0 ; j <= turns[i] ; j++)
 		{
 			dirck[i][j] = [];
 			for(let k=0 ; k <= 3; k++)
@@ -176,13 +186,13 @@ function setup()
 	createCanvas(320, 200);
 	//scale(1.0, 26.0/18.0);
 
-	for(let i=0 ; i <= 255 ; i++)
+	for(i=0 ; i <= 255 ; i++)
 		s[i] = 127 - i;
-	for(let i=0 ; i <= 255 ; i++)
+	for(i=0 ; i <= 255 ; i++)
 		n[i] = 127 - random() * 255;
-	for(let i=0 ; i <= 127 ; i++)
+	for(i=0 ; i <= 127 ; i++)
 		sq[i] = 127 - random() * 50;
-	for(let i=128 ; i <= 255 ; i++)
+	for(i=128 ; i <= 255 ; i++)
 		sq[i] = -128 + random() * 50;
 
 	InitShapes();
@@ -312,14 +322,14 @@ function DrawBoard()
 // orient[px][py]
 // it is converted from the GetShapes code, which reuses the global i
 // from InitShapes
-function draw_shape()
+function draw_shape(co)
 {
 	let i = piece[px][py];
 	let angle = orient[px][py];
 
-	for(let j=1 ; j <= shpt[i] ; j++)
+	for(j=1 ; j <= shpt[i] ; j++)
 	{
-		let hue = cop[cLr[px][py]];
+		let hue = co;
 		if (shptx[i][j-1] < 0)
 			hue++;
 		noFill();
@@ -378,7 +388,7 @@ function PutShape()
 	x = px * 27 + 16;
 	y = py * 19 - 6;
 	bkgd = (px + py + 1) & 1;
-	draw_shape();
+	draw_shape(cop[cLr[px][py]]);
 }
 
 function HyperCube()
@@ -494,10 +504,254 @@ function CheckMove()
 }
 
 
+function ExpSnd()
+{
+	ch = 1 - ch;
+	for(m=0 ; m <= 4 ; m++)
+	{
+		// SOUND freq[j][m], 0.05, vol[m], ch
+	}
+}
+
+function ExpLode()
+{
+	for(j=0 ; j <= 4 ; j++)
+		vol[4-j] = (j + 1) * 40;
+	ch = 0;
+	for(j = 0 ; j <= 20 ; j++)
+	{
+		t = 900 - int(random()*8) * 100;
+		for(m=0 ; m <= 4 ; m++)
+			freq[j][m] = t;
+	}
+
+	Lv = 120;
+	cx = px * 27 + 29;
+	cy = py * 19 + 3;
+
+	// WAVE 0,n
+	// WAVE 1,n
+	if (dirx[dirk[i]] == 0)
+	{
+		for(j=0 ; j <= 20 ; j++)
+		{
+			ddrcy[0][j] = int(random()*10) * diry[drk[i]] + cy;
+			ddrcx[0][j] = cx + 10 - int(random() * 20)
+			ddrcy[1][j] = int(random()*20) * diry[drk[i]] + cy;
+			ddrcx[1][j] = cx + 20 - int(random() * 40);
+		}
+	} else {
+		for(j=0 ; j <= 20 ; j++)
+		{
+			ddrcx[0][j] = int(random()*10) * dirx[drk[i]] + cx;
+			ddrcy[0][j] = cy + 10 - int(random() * 20)
+			ddrcx[1][j] = int(random()*20) * dirx[drk[i]] + cx;
+			ddrcy[1][j] = cy + 20 - int(random() * 40);
+		}
+	}
+
+	EraseSquare();
+
+	for(j=0 ; j <= 20 ; j++)
+	{
+		point(ddrcx[0][j], ddrcy[0][j])
+		if ((j & 4) == 4)
+			ExpSnd();
+	}
+
+	for(j=0 ; j <= 20 ; j++)
+	{
+		point(ddrcx[0][j], ddrcy[0][j])
+		point(ddrcx[1][j], ddrcy[1][j])
+		if ((j & 4) == 4)
+			ExpSnd();
+	}
+
+	for(j=0 ; j <= 20 ; j++)
+	{
+		point(ddrcx[1][j], ddrcy[1][j])
+		if ((j & 4) == 4)
+			ExpSnd();
+	}
+}
+
+
+/*
+Fire:
+px = Lpx(pL)
+py = Lpy(pL)
+Lx(1) = px
+Ly(1) = py
+dir(1) = orient(px,py)
+FOR i=1 to 3: aLive(i)=0: term(i) = 0: NEXT
+aLive(1) = 1
+WHILE(aLive(1) = 1 OR aLive(2) = 1 or aLive(3) = 1)
+	FOR i=1 to 3
+		IF aLive(i) < 1) THEN AdvBeam
+		nLx(i) = Lx(i) + dirx(dir(i))
+		nLy(i) = Ly(i) + diry(dir(i))
+		IF beamck(dir(i),Lx(i),Ly(i)) = 1 THEN EndBeam
+		beamck(dir(i),Lx(i),Ly(i)) = 1
+		GOTO DrawBeam
+
+		Hit:
+		term(i) = 1
+		drk(i) = tdir
+		IF d THEN EndBeam
+
+		tx = px
+		ty = py
+		px = Lx(i)
+		py = Ly(i)
+		if piece(px,py) = 4 THEN k = k + cLr(px,py)
+		if piece(px,py) = 2 THEN L(cLr(px,py)) = 0
+		x = px * 27 + 16
+		y = py * 19 - 6
+		m = piece(px,py)
+		shpt(0) = shpt(m)
+		FOR j=0 to shpt(0)+1
+			shptx(0,j) = shptx(m,j)
+			shpty(0,j) = shpty(m,j)
+		NEXT
+		t = i
+		i = 0
+		co = 8
+		OR orient(px,py) + 1 GOSUB rotate0, rotate90, rotate180, rotate270
+		i = t
+		px = tx
+		py = ty
+
+		EndBeam:
+		aLive(i) = -1
+		AdvBeam:
+	NEXT
+WEND
+*/
+			
+function Fire()
+{
+	px = Lpx[pL];
+	py = Lpy[pL];
+	Lx[1] = px;
+	Ly[1] = py;
+	dir[1] = orient[px][py];
+
+	for(i=1 ; i <= 3 ; i++)
+	{
+		aLive[i] = 0;
+		term[i] = 0;
+	}
+
+	aLive[1] = 1;
+
+	while (aLive[1] == 1 || aLive[2] == 1 || aLive[3] == 1)
+	{
+		for(i=1 ; i <= 3 ; i++)
+		{
+			if (aLive[i] < 1)
+				continue;
+
+			nLx[i] = Lx[i] + dirx[dir[i]];
+			nLy[i] = Ly[i] + diry[dir[i]];
+
+			if (beamck[dir[i]][Lx[i]][Ly[i]] == 1)
+			{
+				aLive[i] = -1;
+				continue;
+			}
+
+			beamck[dir[i]][Lx[i]][Ly[i]] = 1;
+
+			return DrawBeam();
+
+// Hit:
+			term[i] = 1;
+			drk[i] = tdir;
+			if (d)
+			{
+				aLive[i] = -1;
+				continue;
+			}
+
+			tx = px;
+			ty = py;
+			px = Lx[i];
+			py = Ly[i];
+			if (piece[px][py] == 4)
+				k = k + cLr[px][py];
+			if (piece[px][py] == 2)
+				L[cLr[px][py]] = 0
+			x = px * 27 + 16;
+			y = py * 19 - 6;
+			m = piece[px][py];
+			shpt[0] = shpt[m];
+			for(j=0 ; j <= shpt[0]+1 ; j++)
+			{
+				shptx[0][j] = shptx[m][j];
+				shpty[0][j] = shpty[m][j];
+			}
+			t = i;
+			i = 0;
+			co = 8;
+			draw_shape(co);
+		}
+	}
+}
+
 function Laser()
 {
 	console.log("FIRE THE LASER!");
+	k = 0;
+	d = 0;
 
+	for(i=1 ; i <= 3 ; i++)
+	{
+		beamck[i] = [];
+		for(x=1 ; x <= 9 ; x++)
+		{
+			beamck[i][x] = [];
+			for(y=1 ; y <= 9 ; y++)
+				beamck[i][x][y] = 0
+		}
+	}
+
+	Fire();
+
+	for(i=1 ; i <= 3 ; i++)
+	{
+		beamck[i] = [];
+		for(x=1 ; x <= 9 ; x++)
+		{
+			beamck[i][x] = [];
+			for(y=1 ; y <= 9 ; y++)
+				beamck[i][x][y] = 0
+		}
+	}
+
+	for(i=1 ; i <= 3 ; i++)
+	{
+		if (term[i] == 1)
+			if (piece[Lx[i],Ly[i]] > 0)
+			{
+				tx = px;
+				ty = py;
+				px = Lx[i];
+				py = Ly[i];
+				ExpLode();
+				px = tx;
+				py = ty;
+			}
+	}
+
+	// TIMER OFF?
+	d = 1;
+	Fire();
+
+	for(i=1 ; i <= 3 ; i++)
+		for(x=1 ; x <= 9 ; x++)
+			for(y=1 ; y <= 9 ; y++)
+				beamck[i][x][y] = 0;
+		
 }
 
 
@@ -699,7 +953,7 @@ function draw()
 
 		x = mouseX;
 		y = mouseY;
-		draw_shape();
+		draw_shape(cop[cLr[px][py]]);
 
 	} else
 	if (!mouseIsPressed && prev_mouse)
