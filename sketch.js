@@ -35,6 +35,7 @@ let aLive = [];
 let term = [];
 let nLx = [];
 let nLy = [];
+let drk = [];
 let dirck = dim([8,3,3]);
 let bmd0 = dim([158]);
 let bmd1 = dim([22]);
@@ -140,6 +141,8 @@ function InitShapes()
 	x = 0;
 	y = 0;
 	let offset = 0; // RESTORE ShapePts
+	shptx[0] = []; // temp buffer used by ExpLode
+	shpty[0] = [];
 	for(i = 1 ; i <= 8 ; i++)
 	{
 		turns[i] = ShapePts[offset++];
@@ -531,7 +534,9 @@ function ExpLode()
 
 	// WAVE 0,n
 	// WAVE 1,n
-	if (dirx[dirk[i]] == 0)
+
+	// compute some random points
+	if (dirx[drk[i]] == 0)
 	{
 		for(j=0 ; j <= 20 ; j++)
 		{
@@ -552,6 +557,7 @@ function ExpLode()
 
 	EraseSquare();
 
+	// draw the random explosion
 	for(j=0 ; j <= 20 ; j++)
 	{
 		point(ddrcx[0][j], ddrcy[0][j])
@@ -664,7 +670,7 @@ IF piece(nLx(i), nLy(i))=0 THEN Advbeam
 tdir = dir(i)
 dir(i) = dirck(piece(Lx(i),Ly(i)),orient(Lx(i),Ly(i)),dir(i))
 IF dir(i)=-1 THEN Hit
-IF dir(i)>=-2 THEN AdvBeam
+IF dir(i)>-2 THEN AdvBeam
 IF aLive(2)=0 THEN
 	j=2
 ELSE
@@ -711,7 +717,7 @@ function DrawBeam()
 	dir[i] = dirck[piece[Lx[i]][Ly[i]]][orient[Lx[i]][Ly[i]]][dir[i]];
 	if (dir[i] == -1)
 		return Hit(); // always falls through to EndBeam
-	if (dir[i] >= -2)
+	if (dir[i] > -2)
 		return true; // AdvBeam
 
 	// Create a new laser
@@ -723,7 +729,8 @@ function DrawBeam()
 	Lx[j] = Lx[i];
 	Ly[j] = Ly[i];
 	dir[i] = (tdir + 1) & 3;
-	dir[j] = (tdir - 1) & 3;
+	dir[j] = (tdir - 1 + 4) & 3; // ensure wrap doesn't fail
+console.log("new laser " + j + " tdir=" + tdir + " dir[i]=" + dir[i] + ") dir[j]=" + dir[j]);
 	return true; // AdvBeam
 }
 			
@@ -782,6 +789,7 @@ function Fire()
 			nLx[i] = Lx[i] + dirx[dir[i]];
 			nLy[i] = Ly[i] + diry[dir[i]];
 
+console.log("dir["+i+"]="+dir[i] + " Lxy=" + Lx[i] +"," + Ly[i]);
 			if (beamck[dir[i]][Lx[i]][Ly[i]] == 1)
 			{
 				aLive[i] = -1;
@@ -860,7 +868,11 @@ function Laser()
 	{
 		beamck[i] = [];
 		for(x=1 ; x <= 9 ; x++)
+		{
 			beamck[i][x] = [];
+			for(y=1 ; y <= 9 ; y++)
+				beamck[i][x][y] = 0;
+		}
 	}
 				
 
